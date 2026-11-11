@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   push:
     branches: [main, master]
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,7 +24,15 @@ jobs:
       - name: Build release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk SidCalc.apk
       - uses: actions/upload-artifact@v4
         with:
           name: SidCalc-apk
-          path: android/app/build/outputs/apk/release/*.apk
+          path: SidCalc.apk
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete v1.0.0 --yes --cleanup-tag || true
+          gh release create v1.0.0 SidCalc.apk --title "SidCalc 1.0.0" --notes "Install SidCalc.apk on your Android phone."
