@@ -5,6 +5,7 @@ import {
   loadHistory,
   saveHistory,
 } from '../storage/storage';
+import type { AngleMode } from '../engine/calculator';
 import { makeId } from '../utils/format';
 
 /**
@@ -34,8 +35,9 @@ export function useHistory() {
     if (loaded) saveHistory(entries);
   }, [entries, loaded]);
 
-  const add = useCallback((expression: string, result: string) => {
+  const add = useCallback((expression: string, result: string, angle?: AngleMode) => {
     const entry: HistoryEntry = { id: makeId(), expression, result, timestamp: Date.now() };
+    if (angle) entry.angle = angle;
     setEntries((prev) => [entry, ...prev].slice(0, MAX_HISTORY));
   }, []);
 

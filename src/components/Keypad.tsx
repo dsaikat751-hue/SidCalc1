@@ -5,23 +5,60 @@ import type { EditKey } from '../engine/input';
 import type { Theme } from '../theme';
 import { ButtonVariant, CalcButton } from './CalcButton';
 
-export type KeyId = EditKey | '=' | 'MC' | 'MR' | 'M+' | 'M-';
+export type KeyId = EditKey | '=' | 'MC' | 'MR' | 'M+' | 'M-' | 'MODE';
 
-interface KeyDef {
+export interface KeyDef {
   id: KeyId;
   label: string;
   a11y: string;
   variant: ButtonVariant;
+  flex?: number;
 }
 
-const k = (id: KeyId, label: string, a11y: string, variant: ButtonVariant): KeyDef => ({
-  id,
-  label,
-  a11y,
-  variant,
-});
+export const k = (
+  id: KeyId,
+  label: string,
+  a11y: string,
+  variant: ButtonVariant,
+  flex?: number,
+): KeyDef => ({ id, label, a11y, variant, flex });
 
-const digit = (d: string): KeyDef => k(d as KeyId, d, d, 'digit');
+export const digit = (d: string): KeyDef => k(d as KeyId, d, d, 'digit');
+
+/** One horizontal row of buttons with a fixed height. */
+export function KeyRow({
+  defs,
+  height,
+  theme,
+  haptics,
+  onKey,
+  small,
+}: {
+  defs: KeyDef[];
+  height: number;
+  theme: Theme;
+  haptics: boolean;
+  onKey: (id: KeyId) => void;
+  small?: boolean;
+}) {
+  return (
+    <View style={[styles.row, { height }]}>
+      {defs.map((def) => (
+        <CalcButton
+          key={def.id}
+          label={def.label}
+          accessibilityLabel={def.a11y}
+          variant={def.variant}
+          theme={theme}
+          haptics={haptics}
+          flex={def.flex}
+          small={small}
+          onPress={() => onKey(def.id)}
+        />
+      ))}
+    </View>
+  );
+}
 
 const MEMORY_ROW: KeyDef[] = [
   k('MC', 'MC', 'Memory clear', 'memory'),
@@ -62,33 +99,26 @@ interface Props {
 
 const GAP = 10;
 
-/** The whole button grid. Row height adapts to the phone's screen height. */
+/** The standard calculator button grid. Row height adapts to screen height. */
 export function Keypad({ theme, haptics, onKey }: Props) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const usable = height - insets.top - insets.bottom;
-  const rowH = Math.round(Math.min(74, Math.max(46, usable * 0.072)));
-
-  const renderRow = (row: KeyDef[], h: number, key: string) => (
-    <View key={key} style={[styles.row, { height: h }]}>
-      {row.map((def) => (
-        <CalcButton
-          key={def.id}
-          label={def.label}
-          accessibilityLabel={def.a11y}
-          variant={def.variant}
-          theme={theme}
-          haptics={haptics}
-          onPress={() => onKey(def.id)}
-        />
-      ))}
-    </View>
-  );
+  // The tab bar takes ~64dp, so the grid gets a little less than before.
+  const rowH = Math.round(Math.min(72, Math.max(44, usable * 0.066)));
 
   return (
     <View style={styles.pad}>
-      {renderRow(MEMORY_ROW, Math.round(rowH * 0.62), 'mem')}
-      {ROWS.map((row, i) => renderRow(row, rowH, `r${i}`))}
+      <KeyRow
+        defs={MEMORY_ROW}
+        height={Math.round(rowH * 0.62)}
+        theme={theme}
+        haptics={haptics}
+        onKey={onKey}
+      />
+      {ROWS.map((row, i) => (
+        <KeyRow key={`r${i}`} defs={row} height={rowH} theme={theme} haptics={haptics} onKey={onKey} />
+      ))}
     </View>
   );
 }

@@ -1,5 +1,5 @@
 /**
- * Generates the SidCalc app icons (a gold "=" on black) with zero dependencies.
+ * Generates the SidCalc app icons (a crimson "=" on black) with zero dependencies.
  * Run once from the project root:   node scripts/generate-icons.js
  * It overwrites the default Expo images in ./assets.
  */
@@ -98,7 +98,7 @@ function render(size, { bg, fg, scale }) {
   return out;
 }
 
-const GOLD = '#D4AF37';
+const GOLD = '#E8123C';
 const BLACK = '#0A0A0B';
 const outDir = path.join(__dirname, '..', 'assets');
 fs.mkdirSync(outDir, { recursive: true });

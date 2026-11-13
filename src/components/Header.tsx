@@ -4,51 +4,39 @@ import type { Theme } from '../theme';
 
 interface Props {
   theme: Theme;
-  onCopy: () => void;
-  onHistory: () => void;
-  onSettings: () => void;
-}
-
-function Pill({
-  theme,
-  label,
-  a11y,
-  onPress,
-}: {
-  theme: Theme;
-  label: string;
-  a11y: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={a11y}
-      onPress={onPress}
-      hitSlop={6}
-      style={({ pressed }) => [
-        styles.pill,
-        { borderColor: theme.border, backgroundColor: theme.surface },
-        pressed && { opacity: 0.7 },
-      ]}
-    >
-      <Text style={[styles.pillText, { color: theme.text }]}>{label}</Text>
-    </Pressable>
-  );
+  title?: string;
+  /** When given, a "Copy" pill is shown on the right. */
+  onCopy?: () => void;
+  /** Optional small text under the title, e.g. the angle mode. */
+  subtitle?: string;
 }
 
 /** Top bar: app name on the left, quick actions on the right. */
-export function Header({ theme, onCopy, onHistory, onSettings }: Props) {
+export function Header({ theme, title = 'SidCalc', onCopy, subtitle }: Props) {
   return (
     <View style={styles.bar}>
-      <Text accessibilityRole="header" style={[styles.title, { color: theme.gold }]}>
-        SidCalc
-      </Text>
-      <View style={styles.actions}>
-        <Pill theme={theme} label="Copy" a11y="Copy result to clipboard" onPress={onCopy} />
-        <Pill theme={theme} label="History" a11y="Open calculation history" onPress={onHistory} />
-        <Pill theme={theme} label="Settings" a11y="Open settings" onPress={onSettings} />
+      <View>
+        <Text accessibilityRole="header" style={[styles.title, { color: theme.accent }]}>
+          {title}
+        </Text>
+        {subtitle ? <Text style={[styles.subtitle, { color: theme.textMuted }]}>{subtitle}</Text> : null}
       </View>
+      {onCopy ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Copy result to clipboard"
+          onPress={onCopy}
+          hitSlop={8}
+          android_ripple={{ color: 'rgba(232,18,60,0.35)' }}
+          style={({ pressed }) => [
+            styles.pill,
+            { borderColor: theme.border, backgroundColor: theme.surface },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <Text style={[styles.pillText, { color: theme.text }]}>Copy</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -62,14 +50,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: { fontSize: 22, fontWeight: '700', letterSpacing: 1 },
-  actions: { flexDirection: 'row', gap: 8 },
+  subtitle: { fontSize: 11, marginTop: -2 },
   pill: {
-    paddingHorizontal: 12,
-    height: 34,
-    borderRadius: 17,
+    paddingHorizontal: 16,
+    height: 36,
+    borderRadius: 18,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   pillText: { fontSize: 13, fontWeight: '600' },
 });

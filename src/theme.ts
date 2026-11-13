@@ -1,5 +1,6 @@
 /**
- * Colour palettes for SidCalc. Dark (black / charcoal / gold) is the default.
+ * Colour palettes for SidCalc. Dark (deep black / charcoal with a crimson
+ * neon accent) is the default; a light variant is kept for daytime use.
  */
 export type ThemeName = 'dark' | 'light';
 
@@ -13,54 +14,62 @@ export interface Theme {
   /** Digit buttons */
   keyDigit: string;
   keyDigitText: string;
-  /** Function buttons: C, ⌫, %, brackets, √, x² */
+  /** Function buttons: C, ←, %, brackets, √, x², scientific keys */
   keyFunction: string;
   keyFunctionText: string;
   /** Memory buttons */
   keyMemory: string;
   keyMemoryText: string;
-  /** Operator + equals buttons (gold) */
-  gold: string;
-  goldText: string;
+  /** Primary accent (operators, equals, highlights) */
+  accent: string;
+  accentText: string;
+  /** Neon glow colour used behind the answer */
+  glow: string;
+  /** Colour of the big answer text */
+  resultText: string;
   danger: string;
   statusBar: 'light' | 'dark';
 }
 
 export const darkTheme: Theme = {
   name: 'dark',
-  background: '#0A0A0B',
-  surface: '#161618',
-  border: '#2A2A2D',
-  text: '#F5F2EA',
-  textMuted: '#8D8A82',
-  keyDigit: '#202023',
-  keyDigitText: '#F5F2EA',
-  keyFunction: '#323236',
-  keyFunctionText: '#E8C766',
-  keyMemory: '#141416',
-  keyMemoryText: '#B9B5A8',
-  gold: '#D4AF37',
-  goldText: '#14110A',
-  danger: '#FF6B5E',
+  background: '#07070A',
+  surface: '#121216',
+  border: '#26262C',
+  text: '#F4F1F2',
+  textMuted: '#8C8790',
+  keyDigit: '#1B1B20',
+  keyDigitText: '#F4F1F2',
+  keyFunction: '#2A2A31',
+  keyFunctionText: '#FF6B86',
+  keyMemory: '#101014',
+  keyMemoryText: '#B5AEB2',
+  accent: '#E8123C',
+  accentText: '#FFFFFF',
+  glow: '#FF2D55',
+  resultText: '#FFEEF1',
+  danger: '#FFB74D',
   statusBar: 'light',
 };
 
 export const lightTheme: Theme = {
   name: 'light',
-  background: '#F6F3EA',
+  background: '#FAF5F6',
   surface: '#FFFFFF',
-  border: '#DDD7C6',
-  text: '#16140F',
-  textMuted: '#6F6A5C',
+  border: '#E6D9DC',
+  text: '#1A1215',
+  textMuted: '#6E6064',
   keyDigit: '#FFFFFF',
-  keyDigitText: '#16140F',
-  keyFunction: '#E9E3D1',
-  keyFunctionText: '#7A5F0A',
-  keyMemory: '#EFEAD9',
-  keyMemoryText: '#5F5A4C',
-  gold: '#C9A227',
-  goldText: '#16140F',
-  danger: '#C0392B',
+  keyDigitText: '#1A1215',
+  keyFunction: '#F1E4E7',
+  keyFunctionText: '#B0123A',
+  keyMemory: '#F5ECEE',
+  keyMemoryText: '#5F5256',
+  accent: '#D01040',
+  accentText: '#FFFFFF',
+  glow: '#E8123C',
+  resultText: '#B0123A',
+  danger: '#B45309',
   statusBar: 'dark',
 };
 

@@ -6,6 +6,7 @@
  * rules in one place and makes them easy to unit test.
  */
 import {
+  AngleMode,
   autoClose,
   calculate,
   evaluate,
@@ -30,19 +31,28 @@ export type EditKey =
   | '.'
   | '+' | '−' | '×' | '÷'
   | '(' | ')'
-  | '%' | '²' | '√'
+  | '%' | '²' | '√' | '∛' | '^' | '!'
+  | 'π' | 'e'
+  | 'sin' | 'cos' | 'tan' | 'asin' | 'acos' | 'atan' | 'log' | 'ln'
   | 'back' | 'clear' | 'sign';
 
+/** Keys that insert "name(" into the expression. */
+const FUNCTION_KEYS = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'log', 'ln'];
+
 const MAX_LENGTH = 120;
-const OPERATORS = ['+', '−', '-', '×', '÷'];
+const OPERATORS = ['+', '−', '-', '×', '÷', '^'];
 
 const isDigit = (c: string): boolean => c >= '0' && c <= '9';
 const isOperator = (c: string): boolean => OPERATORS.includes(c);
 const isMinus = (c: string): boolean => c === '−' || c === '-';
 /** True if the character can end an operand (so something may follow it). */
-const endsValue = (c: string): boolean => isDigit(c) || c === ')' || c === '²' || c === '%';
+const endsValue = (c: string): boolean =>
+  isDigit(c) || c === ')' || c === '²' || c === '%' || c === '!' || c === 'π' || c === 'e';
 const last = (s: string): string => (s.length ? s[s.length - 1] : '');
 const trimDot = (s: string): string => (last(s) === '.' ? s.slice(0, -1) : s);
+
+/** A function name with its opening bracket at the end, e.g. "asin(". */
+const FUNCTION_TAIL = /(?:asin|acos|atan|sin|cos|tan|log|ln)\($/;
 
 /** The number at the very end of the expression, if any (e.g. "12.5"). */
 const TRAILING_NUMBER = /(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i;
@@ -67,7 +77,8 @@ function prepare(state: CalcState, key: EditKey): CalcState {
   const base: CalcState = { ...state, error: null };
   if (base.result === null) return base;
   switch (key) {
-    case '+': case '−': case '×': case '÷': case '%': case '²': case 'sign':
+    case '+': case '−': case '×': case '÷': case '^':
+    case '%': case '²': case '!': case 'sign':
       return { expression: base.result, result: null, error: null };
     case 'back':
       return { ...base, result: null };
@@ -84,8 +95,8 @@ function pressOperator(e: string, op: string): string {
   if (l === '√') return e;
   if (l === '(') return op === '−' ? e + '−' : e;
   if (isOperator(l)) {
-    // "5×" followed by "−" is a negative number: 5×−3
-    if (op === '−' && (l === '×' || l === '÷')) return e + '−';
+    // "5×" followed by "−" is a negative number: 5×−3 (also 2^−1)
+    if (op === '−' && (l === '×' || l === '÷' || l === '^')) return e + '−';
     // Otherwise the new operator replaces the old one(s).
     const s = stripTrailing(e);
     if (s === '' || last(s) === '(') return op === '−' ? s + '−' : s;
@@ -144,7 +155,7 @@ export function applyKey(state: CalcState, key: EditKey): CalcState {
         }
         break;
       }
-      case '+': case '−': case '×': case '÷':
+      case '+': case '−': case '×': case '÷': case '^':
         next = pressOperator(e, key);
         break;
       case '(':
@@ -167,18 +178,37 @@ export function applyKey(state: CalcState, key: EditKey): CalcState {
         if (endsValue(last(t))) next = t + '²';
         break;
       }
-      case '√': {
+      case '!': {
         const t = trimDot(e);
-        next = endsValue(last(t)) ? t + '×√' : t + '√';
+        if (endsValue(last(t))) next = t + '!';
         break;
       }
-      case 'back':
-        next = e.slice(0, -1);
+      case '√':
+      case '∛': {
+        const t = trimDot(e);
+        next = endsValue(last(t)) ? t + '×' + key : t + key;
         break;
+      }
+      case 'π':
+      case 'e': {
+        const t = trimDot(e);
+        next = endsValue(last(t)) ? t + '×' + key : t + key;
+        break;
+      }
+      case 'back': {
+        // Remove a whole function name such as "sin(" in one tap.
+        const fn = FUNCTION_TAIL.exec(e);
+        next = e.slice(0, fn ? -fn[0].length : -1);
+        break;
+      }
       case 'sign':
         next = toggleSign(e);
         break;
       default:
+        if (FUNCTION_KEYS.includes(key)) {
+          const t = trimDot(e);
+          next = (endsValue(last(t)) ? t + '×' : t) + key + '(';
+        }
         break;
     }
   }
@@ -193,13 +223,16 @@ export interface Committed {
 }
 
 /** Press "=". Returns the new state and the entry to save in history (if any). */
-export function pressEquals(state: CalcState): { state: CalcState; committed: Committed | null } {
+export function pressEquals(
+  state: CalcState,
+  angle: AngleMode = 'deg',
+): { state: CalcState; committed: Committed | null } {
   if (state.result !== null || state.expression === '') {
     return { state, committed: null };
   }
   const expr = autoClose(stripTrailing(state.expression));
   if (expr === '') return { state, committed: null };
-  const out = calculate(expr);
+  const out = calculate(expr, angle);
   if (!out.ok) {
     return { state: { ...state, result: null, error: out.error }, committed: null };
   }
@@ -210,16 +243,16 @@ export function pressEquals(state: CalcState): { state: CalcState; committed: Co
 }
 
 /** Live preview shown (dimmed) while typing, or null when there is nothing useful. */
-export function previewResult(state: CalcState): string | null {
+export function previewResult(state: CalcState, angle: AngleMode = 'deg'): string | null {
   if (state.result !== null || state.error !== null) return null;
   const expr = stripTrailing(state.expression);
   if (!hasOperation(expr)) return null;
-  const out = calculate(expr);
+  const out = calculate(expr, angle);
   return out.ok ? out.text : null;
 }
 
 /** The number the calculator currently "holds", used by M+ and M-. */
-export function currentValue(state: CalcState): number | null {
+export function currentValue(state: CalcState, angle: AngleMode = 'deg'): number | null {
   if (state.error !== null) return null;
   if (state.result !== null) {
     const n = Number(state.result);
@@ -228,7 +261,7 @@ export function currentValue(state: CalcState): number | null {
   const expr = stripTrailing(state.expression);
   if (expr === '') return null;
   try {
-    return evaluate(expr);
+    return evaluate(expr, angle);
   } catch {
     return null;
   }
